@@ -1,0 +1,85 @@
+x11client() {
+    local WINDOWS_HOST
+    WINDOWS_HOST=$(ip route show default | awk '{print $3; exit}')
+    if [ -z "$WINDOWS_HOST" ]; then
+        echo "Could not determine Windows host IP." >&2
+        return 1
+    fi
+    export DISPLAY="${WINDOWS_HOST}:11.0"
+    if nc -z -w 2 "$WINDOWS_HOST" 6011; then
+        echo "X11 enabled: DISPLAY=$DISPLAY"
+    else
+        echo "X11 tunnel unavailable at ${WINDOWS_HOST}:6011" >&2
+        return 1
+    fi
+}
+
+x11diag() {
+    local WINDOWS_HOST DISPLAY_CLIENT out status
+
+    WINDOWS_HOST=$(ip route show default | awk '{print $3; exit}')
+
+    if [ -z "$WINDOWS_HOST" ]; then
+        echo "FAIL: Cannot determine Windows host IP."
+        return 1
+    fi
+
+    DISPLAY_CLIENT="${WINDOWS_HOST}:11.0"
+
+    echo "Windows host : $WINDOWS_HOST"
+    echo "Client display  : $DISPLAY_CLIENT"
+
+    echo -n "Testing Windows X11 bridge (port 6011)... "
+
+    if ! nc -z -w 2 "$WINDOWS_HOST" 6011 >/dev/null 2>&1; then
+        echo "FAIL"
+        echo "Likely cause:"
+        echo "  Windows portproxy or firewall rule is stale."
+        echo "Action:"
+        echo "  Run Update-WslX11.ps1 as Administrator on Windows."
+        return 2
+    fi
+
+    echo "OK"
+
+    echo -n "Testing X11 handshake... "
+
+    out=$(DISPLAY="$DISPLAY_CLIENT" timeout 5 xdpyinfo 2>&1)
+    status=$?
+
+    if [ $status -eq 0 ]; then
+        echo "OK"
+        echo "X11 is working."
+        echo "Run: x11client to activate X11 connection"
+        return 0
+    fi
+
+    if [ $status -eq 124 ]; then
+        echo "TIMEOUT"
+        echo "The Windows bridge accepts connections, but the X11"
+        echo "connection does not make it through to the client's X11."
+        echo "Likely cause:"
+        echo "  The SSH reverse tunnel on port 6010 is missing/stale."
+        echo "Action:"
+        echo "  Reconnect from the client computer"
+        return 3
+    fi
+
+    echo "FAIL"
+
+    if echo "$out" | grep -qiE \
+        'MIT-MAGIC-COOKIE|Authorization required|authorization protocol'; then
+        echo "$out"
+        echo "Likely cause:"
+        echo "  X11 authentication cookie is missing or stale."
+        echo "Action on the local computer:"
+        echo "      x11cookie"
+        return 4
+    fi
+
+    echo "$out"
+    echo "Unrecognised X11 failure."
+    return 5
+}
+
+x11diag

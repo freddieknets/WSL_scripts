@@ -1,0 +1,7 @@
+Host windows-wsl
+  HostName <WINDOWS_IP_OR_HOSTNAME>
+  User <WINDOWS_USER>
+  HostKeyAlias windows-wsl
+  # ProxyJump <PROXY>   # Optional
+  RemoteForward 6010 localhost:6000
+  ExitOnForwardFailure yes

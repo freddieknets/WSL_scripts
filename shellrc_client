@@ -1,0 +1,64 @@
+# This script can take a while to run
+
+x11cookie() {
+    local SSH_HOST="${1:-windows-wsl}"
+    local XAUTH XDPYINFO
+    local tmp name proto cookie
+
+    XAUTH=$(command -v xauth)
+    XDPYINFO=$(command -v xdpyinfo)
+    # XQuartz binaries may not be on PATH on macOS
+    [[ -z "$XAUTH" && -x /opt/X11/bin/xauth ]] &&
+        XAUTH=/opt/X11/bin/xauth
+
+    [[ -z "$XDPYINFO" && -x /opt/X11/bin/xdpyinfo ]] &&
+        XDPYINFO=/opt/X11/bin/xdpyinfo
+
+    if [[ -z "$XAUTH" || -z "$XDPYINFO" ]]; then
+        echo "ERROR: xauth and xdpyinfo are required." >&2
+        return 1
+    fi
+
+    tmp=$(mktemp) || return 1
+    chmod 600 "$tmp"
+
+    cookie=""
+
+    while read -r name proto candidate; do
+        : > "$tmp"
+        chmod 600 "$tmp"
+
+        "$XAUTH" -f "$tmp" add localhost:0 "$proto" "$candidate" >/dev/null 2>&1
+
+        if DISPLAY=localhost:0 XAUTHORITY="$tmp" "$XDPYINFO" >/dev/null 2>&1; then
+            cookie="$candidate"
+            echo "Found active X11 cookie: $name"
+            break
+        fi
+    done < <("$XAUTH" list)
+
+    rm -f "$tmp"
+
+    if [[ -z "$cookie" ]]; then
+        echo "ERROR: Could not identify the active X11 cookie." >&2
+        return 1
+    fi
+
+    ssh -o ClearAllForwardings=yes "$SSH_HOST" "wsl bash -s --" <<EOF
+set -e
+
+WINDOWS_HOST=\$(ip route show default | awk '{print \$3; exit}')
+
+if [ -z "\$WINDOWS_HOST" ]; then
+    echo "ERROR: Could not determine Windows host IP from WSL." >&2
+    exit 1
+fi
+        
+DISPLAY_CLIENT="\${WINDOWS_HOST}:11.0"
+
+xauth remove "\$DISPLAY_CLIENT" >/dev/null 2>&1 || true
+xauth add "\$DISPLAY_CLIENT" MIT-MAGIC-COOKIE-1 "$cookie"
+            
+echo "Installed X11 cookie for \$DISPLAY_CLIENT"
+EOF
+}
