@@ -1,3 +1,7 @@
+Goal
+---
+Set up a route for X11 to work on WSL without the need for mirroring
+
 Local X server prerequisite
 ---------------------------
 This setup reserves TCP ports 6010 and 6011 for the X11 bridge.
@@ -23,7 +27,6 @@ RemoteForward configuration cannot be used as-is.
 
 Troubleshooting
 ---------------
-
 x11diag: Windows bridge FAIL
     Run Update-WslX11.ps1 as Administrator on Windows.
 
