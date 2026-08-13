@@ -12,7 +12,7 @@ Write-Host "Discovering current WSL networking..."
 # Find Windows host IP as seen from WSL
 # ------------------------------------------------------------
 
-$route = (& wsl.exe ip route show default | Out-String).Trim()
+$route = (wsl.exe ip route show default | Out-String).Trim()
 
 if ($route -notmatch 'default\s+via\s+(\d+\.\d+\.\d+\.\d+)') {
     throw "Could not determine the Windows host IP from the WSL default route."
@@ -24,10 +24,7 @@ $WindowsWslIP = $Matches[1]
 # Find WSL's own current IPv4 address
 # ------------------------------------------------------------
 
-$routeToWindows = (
-    & wsl.exe sh -lc "ip -4 route get $WindowsWslIP"
-    | Out-String
-).Trim()
+$routeToWindows = (wsl.exe ip -4 route get $WindowsWslIP | Out-String).Trim()
 
 if ($routeToWindows -notmatch '\bsrc\s+(\d+\.\d+\.\d+\.\d+)') {
     throw "Could not determine the WSL IPv4 address."
