@@ -45,6 +45,12 @@ DISPLAY is :0 in WSL
 Install
 ------
 
+On client machine:
+ - Add contents of shellrc_client into ~/.bashrc (or relevant shell init)
+ - Add contents of sshconfig_client into ~/.ssh/config
+ - `source ~/.bashrc` and run `x11cookie windows-wsl` (or replace windows-wsl with another
+   SSH Host alias if desired). This can take a while.
+
 On Windows:
  - Copy Update-WslX11.ps1 (to add firewall rules) and Remove-WslX11.ps1 (to undo firewall
    rules if ever needed) to user home (or write the contents manually using "edit <filename>")
@@ -62,12 +68,6 @@ On WSL:
  - `sudo apt install x11-apps xauth x11-utils` (if Ubuntu/Debian)
  - Add contents of shellrc_wsl into ~/.bashrc (or relevant shell init)
  - This will automatically run `x11diag` at each login and tell you what to do
-
-On client machine:
- - Add contents of shellrc_client into ~/.bashrc (or relevant shell init)
- - Add contents of sshconfig_client into ~/.ssh/config
- - `source ~/.bashrc` and run `x11cookie windows-wsl` (or replace windows-wsl with another
-   SSH Host alias if desired)
 
 Make a new SSH connection (after updating the config above), login to WSL, start the X11
 route with `x11client`, and test with `xclock` (or `xeyes`, or anything else).
