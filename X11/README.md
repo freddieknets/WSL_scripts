@@ -43,7 +43,7 @@ DISPLAY is :0 in WSL
 
 
 Install
-------
+-------
 
 On client machine:
  - Add contents of shellrc_client into ~/.bashrc (or relevant shell init)
